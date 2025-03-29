@@ -1,0 +1,24 @@
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@3.254.141.89 << 'EOF'
+          cd /home/ubuntu/smart-groceries
+          git pull origin development
+          . envs/groceries/bin/activate
+          pip install -r req.txt
+          python manage.py collectstatic --noinput
+          sudo systemctl restart gunicorn.service
+          sudo systemctl restart nginx.service
+          EOF
+
